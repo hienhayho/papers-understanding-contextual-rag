@@ -1,0 +1,6 @@
+.env
+dev/
+env/
+__pycache__/
+papers/*.pdf
+output/
