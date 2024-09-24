@@ -412,7 +412,11 @@ class RAG:
                 score += bm25_weight * (1 / (index + 1))
 
                 if content == "":
-                    content = bm25_results[index]["content"]
+                    content = (
+                        bm25_results[index].contextualized_content
+                        + "\n\n"
+                        + bm25_results[index].content
+                    )
 
             combined_nodes.append(
                 NodeWithScore(
