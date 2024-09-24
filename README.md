@@ -30,8 +30,14 @@ cd papers-understanding-contextual-rag/
 ## Installation
 
 ```bash
+pre-commit install
+
 pip install -r requirements.txt
 ```
+
+## API Key Setup:
+
+Copy `.env.example` to `.env` and fill in your api keys.
 
 ## Run database
 
