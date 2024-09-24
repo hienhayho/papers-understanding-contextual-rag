@@ -1,4 +1,3 @@
-import os
 from tqdm import tqdm
 from icecream import ic
 from pathlib import Path
@@ -90,9 +89,7 @@ def llama_parse_read_paper(paper_dir: Path | str) -> list[Document]:
 
     paper_dir = Path(paper_dir)
 
-    parser = LlamaParse(
-        result_type="markdown", api_key=os.getenv("LLAMA_PARSE_API_KEY")
-    )
+    parser = LlamaParse(result_type="markdown")
 
     documents: list[Document] = []
     file_extractor = {".pdf": parser}
@@ -115,9 +112,7 @@ def llama_parse_single_file(file_path: Path | str) -> Document:
     Returns:
         Document: Document object from the paper.
     """
-    parser = LlamaParse(
-        result_type="markdown", api_key=os.getenv("LLAMA_PARSE_API_KEY")
-    )
+    parser = LlamaParse(result_type="markdown")
 
     file_path = Path(file_path)
 
