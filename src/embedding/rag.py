@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Literal
 from dotenv import load_dotenv
 
-sys.path.append(str(Path(Path(__file__)).parent.parent.parent))
+sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from qdrant_client import QdrantClient
 from llama_index.llms.openai import OpenAI
@@ -30,10 +30,10 @@ from llama_index.core import (
 )
 
 from src.prompt import CONTEXTUAL_PROMPT
-from src.embedding.elastic_search import ElasticSearch
 from src.schemas import RAGType, DocumentMetadata
-from src.settings import Settings as ConfigSettings, setting as config_setting
+from src.embedding.elastic_search import ElasticSearch
 from src.readers.paper_reader import llama_parse_read_paper
+from src.settings import Settings as ConfigSettings, setting as config_setting
 
 load_dotenv()
 ic.configureOutput(includeContext=True, prefix="DEBUG - ")
@@ -114,7 +114,7 @@ class RAG:
         self,
         origin_document: Document,
         splited_documents: list[Document],
-    ) -> list[Document]:
+    ) -> tuple[list[Document], list[DocumentMetadata]]:
         """
         Add contextual content to the splited documents.
 
@@ -123,7 +123,7 @@ class RAG:
             splited_documents (list[Document]): The splited documents from the original document.
 
         Returns:
-            list[Document]: List of documents with contextual content.
+            (tuple[list[Document], list[DocumentMetadata]]): List of documents with contextual content and its metadata.
         """
 
         whole_document = origin_document.text
@@ -181,7 +181,7 @@ class RAG:
             splited_documents (list[list[Document]]): List of splited documents from the raw documents one by one.
 
         Returns:
-            (tuple[list[Document], list[DocumentMetadata]]): Tuple of contextual documents and its metadata.
+            (tuple[list[Document], list[DocumentMetadata]]): Tuple of contextual documents and its metadata one by one.
         """
 
         documents: list[Document] = []
@@ -352,13 +352,16 @@ class RAG:
         index = self.get_query_engine(RAGType.ORIGIN)
         return index.query(query)
 
-    def contextual_rag_search(self, query: str, k: int = 150) -> str:
+    def contextual_rag_search(
+        self, query: str, k: int = 150, debug: bool = False
+    ) -> str:
         """
         Search the query with the Contextual RAG.
 
         Args:
             query (str): The query to search.
             k (int): The number of documents to return. Default to `150`.
+            debug (bool): Debug mode
 
         Returns:
             str: The search results.
@@ -385,12 +388,6 @@ class RAG:
 
         semantic_doc_id = [node.metadata["doc_id"] for node in nodes]
 
-        def get_content_by_doc_id(doc_id: str):
-            for node in nodes:
-                if node.metadata["doc_id"] == doc_id:
-                    return node.text
-            return ""
-
         bm25_results = self.es.search(query, k=k)
 
         bm25_doc_id = [result.doc_id for result in bm25_results]
@@ -399,17 +396,31 @@ class RAG:
 
         combined_ids = list(set(semantic_doc_id + bm25_doc_id))
 
+        def get_content_by_doc_id(doc_id: str):
+            for node in nodes:
+                if node.metadata["doc_id"] == doc_id:
+                    return node.text
+            return ""
+
         # Compute score according to: https://github.com/anthropics/anthropic-cookbook/blob/main/skills/contextual-embeddings/guide.ipynb
+        bm25_count = 0
+        semantic_count = 0
+        both_count = 0
         for id in combined_ids:
             score = 0
             content = ""
+
             if id in semantic_doc_id:
                 index = semantic_doc_id.index(id)
                 score += semantic_weight * (1 / (index + 1))
                 content = get_content_by_doc_id(id)
+
+                semantic_count += 1
+
             if id in bm25_doc_id:
                 index = bm25_doc_id.index(id)
                 score += bm25_weight * (1 / (index + 1))
+                bm25_count += 1
 
                 if content == "":
                     content = (
@@ -417,6 +428,8 @@ class RAG:
                         + "\n\n"
                         + bm25_results[index].content
                     )
+            if id in semantic_doc_id and id in bm25_doc_id:
+                both_count += 1
 
             combined_nodes.append(
                 NodeWithScore(
@@ -426,6 +439,11 @@ class RAG:
                     score=score,
                 )
             )
+
+        if debug:
+            ic(semantic_count)
+            ic(bm25_count)
+            ic(both_count)
 
         reranker = CohereRerank(
             top_n=self.setting.top_n,

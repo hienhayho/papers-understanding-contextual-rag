@@ -1,7 +1,7 @@
 import argparse
 import threading
-from src.settings import setting
 from src.embedding import RAG
+from src.settings import setting
 
 GREEN = "\033[92m"
 RESET = "\033[0m"
@@ -33,7 +33,7 @@ if args.compare:
         ),
         threading.Thread(
             target=lambda: print(
-                f"\n\n{GREEN}Contextual RAG: {RESET}{rag.contextual_rag_search(q)}"
+                f"\n\n{GREEN}Contextual RAG: {RESET}{rag.contextual_rag_search(q, debug=True)}"
             )
         ),
     ]
@@ -44,4 +44,4 @@ if args.compare:
     for t in thread:
         t.join()
 else:
-    print(f"{GREEN}Contextual RAG: {RESET}{rag.contextual_rag_search(q)}")
+    print(f"{GREEN}Contextual RAG: {RESET}{rag.contextual_rag_search(q, debug=True)}")
