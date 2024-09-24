@@ -62,7 +62,7 @@ bash scripts/download_papers.sh
 Ingest all papers content to database. By default, it will ingest both original RAG and contextual RAG.
 
 ```bash
-bash scripts/contextual_rag_ingest.sh
+bash scripts/contextual_rag_ingest.sh both
 ```
 
 > Note: Please refer to [scripts/contextual_rag_ingest.sh](scripts/contextual_rag_ingest.sh) to change the papers dir and RAG type to be ingested.
