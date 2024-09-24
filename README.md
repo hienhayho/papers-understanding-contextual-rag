@@ -80,7 +80,7 @@ python demo_contextual_rag.py --q "What is ChainBuddy ?" --compare
 You can refer to [src/settings.py](./src/settings.py) to modify setting.
 
 ```python
-from src.db import RAG
+from src.embedding import RAG
 from src.settings import Settings
 
 setting = Settings()

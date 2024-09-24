@@ -30,7 +30,7 @@ from llama_index.core import (
 )
 
 from src.prompt import CONTEXTUAL_PROMPT
-from src.db.elastic_search import ElasticSearch
+from src.embedding.elastic_search import ElasticSearch
 from src.schemas import RAGType, DocumentMetadata
 from src.settings import Settings as ConfigSettings, setting
 from src.readers.paper_reader import llama_parse_read_paper
