@@ -5,3 +5,5 @@ llama-parse==0.5.6
 llama-index-readers-file==0.2.2
 llama-index-vector-stores-qdrant==0.3.0
 pydantic_settings==2.5.2
+llama-index-postprocessor-cohere-rerank==0.2.1
+elasticsearch==8.15.1
