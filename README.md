@@ -17,7 +17,7 @@ More details can be found here: [link](https://www.anthropic.com/news/contextual
 ## To do:
 
 -   [x] Upload all source code.
--   [] Build package for pip installation.
+-   [ ] Build package for pip installation.
 
 ## Clone the repository
 
