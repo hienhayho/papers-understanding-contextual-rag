@@ -5,6 +5,7 @@ from tqdm import tqdm
 from icecream import ic
 from pathlib import Path
 from typing import Literal
+from datetime import datetime
 from dotenv import load_dotenv
 
 sys.path.append(str(Path(__file__).parent.parent.parent))
@@ -32,11 +33,17 @@ from llama_index.core import (
 from src.prompt import CONTEXTUAL_PROMPT
 from src.schemas import RAGType, DocumentMetadata
 from src.embedding.elastic_search import ElasticSearch
-from src.readers.paper_reader import llama_parse_read_paper
 from src.settings import Settings as ConfigSettings, setting as config_setting
+from src.readers.paper_reader import llama_parse_read_paper, llama_parse_multiple_file
+
+
+def time_format():
+    now = datetime.now()
+    return f'DEBUG - {now.strftime("%H:%M:%S")} - '
+
 
 load_dotenv()
-ic.configureOutput(includeContext=True, prefix="DEBUG - ")
+ic.configureOutput(includeContext=True, prefix=time_format)
 
 Settings.chunk_size = config_setting.chunk_size
 
@@ -216,7 +223,7 @@ class RAG:
             show_progress (bool): Show the progress bar.
             type (Literal["origin", "contextual"]): The type of RAG to ingest.
         """
-        ic(f"Indexing {type} data...")
+        ic(type)
 
         if type == "origin":
             collection_name = self.setting.original_rag_collection_name
@@ -238,6 +245,36 @@ class RAG:
         ic(f"Indexed: {type} !!!")
 
         return index  # noqa
+
+    def insert_data(
+        self,
+        documents: list[Document],
+        show_progess: bool = True,
+        type: Literal["origin", "contextual"] = "contextual",
+    ):
+        ic(type)
+
+        if type == "origin":
+            collection_name = self.setting.original_rag_collection_name
+        else:
+            collection_name = self.setting.contextual_rag_collection_name
+
+        ic(collection_name)
+
+        vector_store_index = self.get_qdrant_vector_store_index(
+            client=self.qdrant_client,
+            collection_name=collection_name,
+        )
+
+        documents = (
+            tqdm(documents, desc=f"Adding more data to {type} ...")
+            if show_progess
+            else documents
+        )
+        for document in documents:
+            vector_store_index.insert(document)
+
+        ic(f"Added data to {type} !!!")
 
     def get_qdrant_vector_store_index(
         self, client: QdrantClient, collection_name: str
@@ -336,6 +373,45 @@ class RAG:
             self.es.index_documents(contextual_documents_metadata)
 
             ic(f"Ingested data for {type}")
+
+    def run_add_files(
+        self, files_or_folders: list[str], type: Literal["origin", "contextual", "both"]
+    ):
+        """
+        Add files to the database.
+
+        Args:
+            files_or_folders (list[str]): List of file paths or paper folder to be ingested.
+            type (Literal["origin", "contextual", "both"]): Type of RAG type to ingest.
+        """
+        raw_documents = llama_parse_multiple_file(files_or_folders)
+        splited_documents = self.split_document(raw_documents)
+
+        ingest_documents: list[Document] = []
+        if type == RAGType.BOTH or type == RAGType.ORIGIN:
+            for each_splited in splited_documents:
+                ingest_documents.extend(each_splited)
+
+        if type == RAGType.ORIGIN:
+            self.insert_data(ingest_documents, type=RAGType.ORIGIN)
+
+        else:
+            if type == RAGType.BOTH:
+                self.insert_data(ingest_documents, type=RAGType.ORIGIN)
+
+            contextual_documents, contextual_documents_metadata = (
+                self.get_contextual_documents(
+                    raw_documents=raw_documents, splited_documents=splited_documents
+                )
+            )
+
+            assert len(contextual_documents) == len(contextual_documents_metadata)
+
+            self.insert_data(contextual_documents, type=RAGType.CONTEXTUAL)
+
+            self.es.index_documents(contextual_documents_metadata)
+
+            ic(f"Added data for {type}")
 
     def origin_rag_search(self, query: str) -> str:
         """
@@ -441,9 +517,7 @@ class RAG:
             )
 
         if debug:
-            ic(semantic_count)
-            ic(bm25_count)
-            ic(both_count)
+            ic(semantic_count, bm25_count, both_count)
 
         reranker = CohereRerank(
             top_n=self.setting.top_n,

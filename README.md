@@ -67,6 +67,14 @@ bash scripts/contextual_rag_ingest.sh both
 
 > Note: Please refer to [scripts/contextual_rag_ingest.sh](scripts/contextual_rag_ingest.sh) to change the papers dir and RAG type to be ingested.
 
+## Add file or docs folder to be ingested
+
+First indicate which type: ["both", "origin", "contextual"] and add files or folder paths at the end.
+
+```bash
+bash scripts/add_files_to_ingest.sh both a.pdf folder1/ ...
+```
+
 ## Run demo
 
 Add `--compare` to run the original RAG and Contextual RAG in parallel for comparison.

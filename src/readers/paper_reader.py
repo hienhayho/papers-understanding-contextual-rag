@@ -6,6 +6,7 @@ from llama_parse import LlamaParse
 import google.generativeai as genai
 from llama_index.core import Document
 from llama_index.core import SimpleDirectoryReader
+from .utils import get_files_from_folder_or_file_paths
 
 load_dotenv()
 
@@ -89,13 +90,16 @@ def llama_parse_read_paper(paper_dir: Path | str) -> list[Document]:
 
     paper_dir = Path(paper_dir)
 
+    valid_files = get_files_from_folder_or_file_paths([paper_dir])
+
+    ic(valid_files)
+
     parser = LlamaParse(result_type="markdown")
 
-    documents: list[Document] = []
     file_extractor = {".pdf": parser}
 
     documents = SimpleDirectoryReader(
-        input_dir=paper_dir, file_extractor=file_extractor, exclude=[".keep"]
+        input_files=valid_files, file_extractor=file_extractor
     ).load_data(show_progress=True)
 
     ic(len(documents))
@@ -120,6 +124,31 @@ def llama_parse_single_file(file_path: Path | str) -> Document:
 
     documents = SimpleDirectoryReader(
         input_files=[file_path],
+        file_extractor=file_extractor,
+    ).load_data(show_progress=True)
+
+    return documents
+
+
+def llama_parse_multiple_file(files_or_folder: list[str]) -> list[Document]:
+    """
+    Read the content of multiple papers using LlamaParse.
+
+    Args:
+        files_or_folder (list[str]): List of file paths or folder paths containing the papers.
+    Returns:
+        list[Document]: List of documents from all papers.
+    """
+    valid_files = get_files_from_folder_or_file_paths(files_or_folder)
+
+    ic(valid_files)
+
+    parser = LlamaParse(result_type="markdown")
+
+    file_extractor = {".pdf": parser}
+
+    documents = SimpleDirectoryReader(
+        input_files=valid_files,
         file_extractor=file_extractor,
     ).load_data(show_progress=True)
 
