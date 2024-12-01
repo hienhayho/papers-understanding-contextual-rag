@@ -8,7 +8,7 @@ Simple implementation of `Contextual RAG` from [Anthropic](https://www.anthropic
 
 Contextual Retrieval-Augmented Generation (RAG) enhances AI model responses by retrieving relevant information from extensive knowledge bases.
 
-Traditional RAG methods often struggle to maintain context, but Contextual Retrieval addresses this issue by utilizing Contextual Embeddings and Contextual BM25, significantly improving retrieval accuracy.
+Traditional RAG methods often struggle to maintain context, but Contextual RAG addresses this issue by utilizing Contextual Embeddings and Contextual BM25, significantly improving retrieval accuracy.
 
 A key technique involves prepending chunk-specific context to each data piece before embedding, ensuring that relevant information is preserved and accurately retrieved. Additionally, during the query process, results from Elasticsearch are reranked alongside semantic results to enhance contextual relevance.
 
