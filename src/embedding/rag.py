@@ -30,8 +30,8 @@ from llama_index.core import (
     VectorStoreIndex,
 )
 
-from src.prompt import CONTEXTUAL_PROMPT
 from src.schemas import RAGType, DocumentMetadata
+from src.prompt import CONTEXTUAL_PROMPT, QA_PROMPT
 from src.embedding.elastic_search import ElasticSearch
 from src.settings import Settings as ConfigSettings, setting as config_setting
 from src.readers.paper_reader import llama_parse_read_paper, llama_parse_multiple_file
@@ -528,10 +528,22 @@ class RAG:
 
         retrieved_nodes = reranker.postprocess_nodes(combined_nodes, query_bundle)
 
-        text_nodes = [Node(text=node.node.text) for node in retrieved_nodes]
+        contexts = [n.node.text for n in retrieved_nodes]
 
-        vector_store = VectorStoreIndex(
-            nodes=text_nodes,
-        ).as_query_engine()
+        messages = [
+            ChatMessage(
+                role="system",
+                content="You are a helpful assistant.",
+            ),
+            ChatMessage(
+                role="user",
+                content=QA_PROMPT.format(
+                    context_str="\n\n".join(contexts),
+                    query_str=query,
+                ),
+            ),
+        ]
 
-        return vector_store.query(query)
+        response = self.llm.chat(messages).message.content
+
+        return response
